@@ -280,10 +280,12 @@ ANSI-to-image tool.
       wired; not tried with a physical pad in this session.
 - [x] Octants beyond VTE: researched per terminal (see the blocks look notes);
       Ghostty auto-detected, kitty and foot documented for `--octants`.
-- [ ] Blocks look at the tiniest scales: some filled clouds get a thin vertical
-      stroke hanging under them (seen in David's 7-row --wide strip,
-      2026-10-05); the fit struggling with the cloud's edge, like the stars
-      before (which octants fixed).
+- [x] Cloud stroke in the blocks look (seen at 7 and 19 rows): the cloud's 2 px
+      tail left a cell with ~4 cloud samples, and the "real sprite presence
+      must stay visible" rule (meant for the ground line) forced it into a
+      full-height `▉` sliver beside the tail's `━`, reading as `├`. That rule
+      now applies to ground cells only; a scan of 3000 frames shows no `▉` in
+      cloud cells any more and the ground stays unbroken.
 - [x] Resize mid-run: checked in offline.ts `adjustDimensions`: Chrome doesn't
       recompute the speed on resize (only at start and restart), it stops the
       game. tty-rex now pauses on resize too (an earlier note here claimed

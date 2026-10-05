@@ -308,7 +308,10 @@ fn fit_cell(samples: &[Rgb; 64], kinds: &[u8; 64]) -> (char, Rgb, Rgb) {
     let sprite_a = counts.iter().any(|e| e.0 == a && e.2);
     // a sprite with real presence in the cell must stay visible (a thin line
     // one row off a glyph's line would otherwise tie with "nothing")
-    let must_show = sprite_a && (!mask).count_ones() >= 4;
+    // (only for the ground line: on a cloud's edge it turned four stray
+    // pixels into a full-height sliver)
+    let ground = kinds.iter().any(|&k| k == GROUND);
+    let must_show = sprite_a && ground && (!mask).count_ones() >= 4;
     // the ground is a horizontal line: only horizontal glyphs, or a bump
     // pixel turns it into dashes of quadrants
     let horizontal = sprite_a && kinds.iter().filter(|&&k| k == GROUND).count() * 2 >= kinds.iter().filter(|&&k| k != 0).count();
