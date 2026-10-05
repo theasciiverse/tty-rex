@@ -265,7 +265,11 @@ ANSI-to-image tool.
 - [x] Sound: the original three clips, played via rodio; `M` mutes.
 - [ ] Colour palettes have only been judged in rendered captures, not yet on a
       range of real terminal themes
-- [ ] Gamepad (the original supports one; gilrs as in Panzer would do it)
+- [x] Gamepad: Chrome's mapping (offline.ts pollActiveGamepad: button 0 jump,
+      1 duck, 9 restart), via gilrs as in Panzer (`gamepad` cargo feature, on
+      by default; SDL-database pads only, `TTY_REX_ANY_PAD=1` for any). Start
+      also pauses when not crashed; the D-pad mirrors jump and duck. Built and
+      wired; not tried with a physical pad in this session.
 - [x] Octants beyond VTE: researched per terminal (see the blocks look notes);
       Ghostty auto-detected, kitty and foot documented for `--octants`.
 - [x] Resize mid-run: checked in offline.ts `adjustDimensions`: Chrome doesn't

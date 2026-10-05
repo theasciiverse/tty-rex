@@ -118,6 +118,7 @@ fn main() -> io::Result<()> {
     log::info!("layout {layout:?}");
     let mut runner = Runner::new(layout.map_or(sim::MAX_WIDTH, |l| l.width), highscore::load(), seed);
     let mut input = Input::new(kitty);
+    input.open_pad();
     let result = run(&mut terminal, &mut runner, &mut renderer, &mut input, &mut audio);
     let _ = execute!(io::stdout(), DisableFocusChange);
     if kitty {
@@ -158,30 +159,13 @@ fn run(terminal: &mut ratatui::DefaultTerminal, r: &mut Runner, renderer: &mut R
     let mut look_shown: Option<Instant> = None;
     loop {
         let frame_start = Instant::now();
+        // commands from the gamepad and the keyboard, handled together below
+        let mut cmds = input.poll_pad(r);
         while event::poll(Duration::ZERO)? {
             match event::read()? {
                 Event::Key(k) => {
                     log::debug!("key {:?} {:?} {:?}", k.code, k.kind, k.modifiers);
-                    match input.on_key(k, Instant::now(), r) {
-                        Some(Cmd::Quit) => return Ok(()),
-                        Some(Cmd::Pause) => {
-                            r.toggle_pause();
-                            input.clear();
-                            log::info!("pause {}", r.paused);
-                        }
-                        Some(Cmd::Mute) => {
-                            audio.muted = !audio.muted;
-                            log::info!("muted {}", audio.muted);
-                        }
-                        Some(Cmd::Restart) => r.restart_key(),
-                        Some(Cmd::Look) => {
-                            renderer.look = renderer.look.next();
-                            settings::save_look(renderer.look.name());
-                            look_shown = Some(Instant::now());
-                            log::info!("look {:?}", renderer.look);
-                        }
-                        None => {}
-                    }
+                    cmds.extend(input.on_key(k, Instant::now(), r));
                 }
                 Event::Resize(w, h) => {
                     let layout = renderer.layout(Rect::new(0, 0, w, h));
@@ -202,6 +186,27 @@ fn run(terminal: &mut ratatui::DefaultTerminal, r: &mut Runner, renderer: &mut R
                 }
                 Event::FocusGained => log::info!("focus gained"),
                 _ => {}
+            }
+        }
+        for cmd in cmds {
+            match cmd {
+                Cmd::Quit => return Ok(()),
+                Cmd::Pause => {
+                    r.toggle_pause();
+                    input.clear();
+                    log::info!("pause {}", r.paused);
+                }
+                Cmd::Mute => {
+                    audio.muted = !audio.muted;
+                    log::info!("muted {}", audio.muted);
+                }
+                Cmd::Restart => r.restart_key(),
+                Cmd::Look => {
+                    renderer.look = renderer.look.next();
+                    settings::save_look(renderer.look.name());
+                    look_shown = Some(Instant::now());
+                    log::info!("look {:?}", renderer.look);
+                }
             }
         }
         for key in input.poll(Instant::now(), r) {

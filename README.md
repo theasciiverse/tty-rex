@@ -33,6 +33,9 @@ skips the check).
 | M | mute |
 | Q, Esc | quit |
 
+A gamepad works as in Chrome: A jumps, B ducks, Start restarts after a crash (and
+pauses otherwise); the D-pad's up and down jump and duck too.
+
 Variable jump height needs key release events, which terminals speaking the kitty
 keyboard protocol send (kitty itself, for one). Elsewhere a release can only be guessed
 from the key repeats stopping, so every jump is a full one.
