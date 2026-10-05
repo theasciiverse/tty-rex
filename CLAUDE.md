@@ -267,8 +267,12 @@ ANSI-to-image tool.
 - [x] `drawprobe`: refuses to start on Braille rated Unusable/Degraded (or no
       codepoint support), `--force` overrides; no true-colour requirement.
 - [x] Sound: the original three clips, played via rodio; `M` mutes.
-- [ ] Colour palettes have only been judged in rendered captures, not yet on a
-      range of real terminal themes
+- [x] Colour palettes: true colour judged in David's own GNOME Terminal
+      screenshots. 256-colour mode uses only entries 16-255, which VTE builds as
+      the standard cube (0, 55 + 40n) and grey ramp (8 + 10i) (src/vte.cc
+      set_colors, 0.84.0), the same values the game's matcher and the capture
+      tool use, and themes only change 0-15; so the 256-colour captures match a
+      real VTE terminal.
 - [x] Gamepad: Chrome's mapping (offline.ts pollActiveGamepad: button 0 jump,
       1 duck, 9 restart), via gilrs as in Panzer (`gamepad` cargo feature, on
       by default; SDL-database pads only, `TTY_REX_ANY_PAD=1` for any). Start
