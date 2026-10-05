@@ -280,6 +280,10 @@ ANSI-to-image tool.
       wired; not tried with a physical pad in this session.
 - [x] Octants beyond VTE: researched per terminal (see the blocks look notes);
       Ghostty auto-detected, kitty and foot documented for `--octants`.
+- [ ] Blocks look at the tiniest scales: some filled clouds get a thin vertical
+      stroke hanging under them (seen in David's 7-row --wide strip,
+      2026-10-05); the fit struggling with the cloud's edge, like the stars
+      before (which octants fixed).
 - [x] Resize mid-run: checked in offline.ts `adjustDimensions`: Chrome doesn't
       recompute the speed on resize (only at start and restart), it stops the
       game. tty-rex now pauses on resize too (an earlier note here claimed
