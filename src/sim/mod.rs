@@ -101,6 +101,7 @@ pub enum Event {
 }
 
 /// distance_meter.ts: the score, and its flashing at every 100.
+#[derive(Clone)]
 pub struct Meter {
     pub shown: u32,
     pub achievement: bool,
@@ -143,6 +144,7 @@ impl Meter {
     }
 }
 
+#[derive(Clone)]
 pub struct Runner {
     pub width: i32,
     pub trex: Trex,
@@ -218,6 +220,11 @@ impl Runner {
         } else {
             self.width
         }
+    }
+
+    /// Milliseconds since the crash (auto mode gets back up after a pause).
+    pub fn crash_ms(&self) -> f64 {
+        self.crash_time
     }
 
     pub fn take_events(&mut self) -> Vec<Event> {

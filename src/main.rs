@@ -1,4 +1,5 @@
 mod audio;
+mod auto;
 mod capability;
 mod highscore;
 mod input;
@@ -22,6 +23,10 @@ use std::time::{Duration, Instant, SystemTime};
 const SNAPSHOT_EVERY: Duration = Duration::from_millis(500);
 const FRAME: Duration = Duration::from_micros(16_667);
 const LOOK_NOTE: Duration = Duration::from_millis(1500);
+/// Auto mode: sound at this share of full volume, and back up this long
+/// after a crash.
+const AUTO_VOLUME: f32 = 0.4;
+const AUTO_RESPAWN_MS: f64 = 3000.0;
 
 fn main() -> io::Result<()> {
     // Session logging: RUST_LOG=debug tty-rex 2>tty-rex.log
@@ -29,30 +34,39 @@ fn main() -> io::Result<()> {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let has = |f: &str| args.iter().any(|a| a == f);
     if has("--help") || has("-h") {
-        println!(
-            "tty-rex [--look NAME] [--wide] [--octants | --no-octants] [--mute] [--force] [--scale N] [--seed N]\n\n\
-             Chrome's offline T-Rex runner, in Braille.\n\
-             Space / Up jump (hold for higher), Down ducks, Enter restarts,\n\
-             P pauses (so does switching away from the terminal), V changes the look,\n\
-             M mutes, Q quits.\n\
-             Fits anything from a 20x7 split pane up to Chrome's own pixels (38 rows).\n\n\
-             --look NAME how it's drawn (V cycles them in game and remembers the choice):\n\
-                           mixed    colour half-block scenery, colour Braille sprites (default)\n\
-                           blocks   everything in colour half-blocks\n\
-                           color    colour Braille sprites on a plain page\n\
-                           braille  Braille in the terminal's own colours (default with NO_COLOR)\n\
-                           classic  Chrome's grey on white (needs true colour)\n\
-             --mono, --classic   same as --look braille, --look classic\n\
-             --wide      the road runs the full terminal width, past Chrome's 600 px\n\
-                         (you see further ahead, so it's a little easier)\n\
-             --octants   draw the blocks look's T-Rex in block octants, as sharp as Braille.\n\
-                         On by default in VTE 0.78+ (GNOME Terminal, Ptyxis, ...) and Ghostty 1.1.1+;\n\
-                         kitty 0.40+ and foot 1.20+ draw them too but can't be detected\n\
-             --no-octants  quadrants instead\n\
-             --mute      no sound\n\
-             --force     start even if Braille looks unusable here\n\
-             --scale N   canvas pixels per Braille dot, 1 (finest) to 6; default fits the terminal\n\
-             --seed N    fixed random seed, for replaying a run"
+        print!(
+            "{}",
+            r#"tty-rex [--auto] [--look NAME] [--wide] [--octants | --no-octants] [--mute] [--force] [--scale N] [--seed N]
+
+Chrome's offline T-Rex runner, in the terminal.
+Space / Up jump (hold for higher), Down ducks, Enter restarts,
+P pauses (so does switching away from the terminal), V changes the look,
+A runs him on his own (auto mode), M mutes, Q quits.
+Fits anything from a 20x7 split pane up to Chrome's own pixels (38 rows).
+
+  --auto         start in auto mode: he runs on his own, quieter, gets back up
+                 after a crash and doesn't pause when you look away; for a strip
+                 in a split (try --auto --wide in a short pane)
+  --look NAME    how it's drawn (V cycles them in game and remembers the choice):
+                   mixed    colour half-block scenery, colour Braille sprites (default)
+                   blocks   colour block glyphs; the T-Rex in block octants
+                   color    colour Braille sprites on a plain page
+                   braille  Braille in the terminal's own colours (default with NO_COLOR)
+                   classic  Chrome's grey on white (needs true colour)
+  --mono, --classic
+                 same as --look braille, --look classic
+  --wide         the road runs the full terminal width, past Chrome's 600 px
+                 (you see further ahead, so it's a little easier)
+  --octants      the blocks look's T-Rex in block octants, as sharp as Braille.
+                 On by default in VTE 0.78+ (GNOME Terminal, Ptyxis, ...) and
+                 Ghostty 1.1.1+; kitty 0.40+ and foot 1.20+ draw them too but
+                 can't be detected
+  --no-octants   quadrants instead
+  --mute         no sound
+  --force        start even if Braille looks unusable here
+  --scale N      canvas pixels per Braille dot, 1 (finest) to 6; default fits
+  --seed N       fixed random seed, for replaying a run
+"#
         );
         return Ok(());
     }
@@ -119,7 +133,7 @@ fn main() -> io::Result<()> {
     let mut runner = Runner::new(layout.map_or(sim::MAX_WIDTH, |l| l.width), highscore::load(), seed);
     let mut input = Input::new(kitty);
     input.open_pad();
-    let result = run(&mut terminal, &mut runner, &mut renderer, &mut input, &mut audio);
+    let result = run(&mut terminal, &mut runner, &mut renderer, &mut input, &mut audio, has("--auto"));
     let _ = execute!(io::stdout(), DisableFocusChange);
     if kitty {
         let _ = execute!(io::stdout(), PopKeyboardEnhancementFlags);
@@ -151,7 +165,16 @@ fn octants_detected() -> Option<&'static str> {
     None
 }
 
-fn run(terminal: &mut ratatui::DefaultTerminal, r: &mut Runner, renderer: &mut Renderer, input: &mut Input, audio: &mut audio::Audio) -> io::Result<()> {
+fn run(terminal: &mut ratatui::DefaultTerminal, r: &mut Runner, renderer: &mut Renderer, input: &mut Input, audio: &mut audio::Audio, start_auto: bool) -> io::Result<()> {
+    // auto mode: the autopilot plays, quieter; he gets back up after a crash
+    let new_pilot = || auto::Autopilot::new(SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).map_or(7, |d| d.as_nanos() as u64));
+    let mut pilot = start_auto.then(new_pilot);
+    if pilot.is_some() {
+        audio.volume = AUTO_VOLUME;
+        log::info!("auto on");
+    }
+    // the player's best: the robot's runs don't count
+    let mut player_high = r.high;
     let mut last = Instant::now();
     let mut acc = Duration::ZERO;
     let mut snapshot = Instant::now();
@@ -165,6 +188,11 @@ fn run(terminal: &mut ratatui::DefaultTerminal, r: &mut Runner, renderer: &mut R
             match event::read()? {
                 Event::Key(k) => {
                     log::debug!("key {:?} {:?} {:?}", k.code, k.kind, k.modifiers);
+                    if pilot.is_some() && Input::is_play_key(&k) {
+                        pilot = None;
+                        audio.volume = 1.0;
+                        log::info!("auto off (player took over)");
+                    }
                     cmds.extend(input.on_key(k, Instant::now(), r));
                 }
                 Event::Resize(w, h) => {
@@ -174,15 +202,21 @@ fn run(terminal: &mut ratatui::DefaultTerminal, r: &mut Runner, renderer: &mut R
                         r.resize(l.width);
                     }
                     // offline.ts adjustDimensions: a resize mid-run stops
-                    // the game (Space resumes); the speed stays as it was
-                    r.pause();
-                    input.clear();
+                    // the game (Space resumes); the speed stays as it was.
+                    // Not in auto mode: he runs on in his strip
+                    if pilot.is_none() {
+                        r.pause();
+                        input.clear();
+                    }
                 }
                 Event::FocusLost => {
-                    let was = r.paused;
-                    r.pause();
-                    input.clear();
-                    log::info!("focus lost, paused {} (was {was})", r.paused);
+                    // auto mode is for running while you work elsewhere
+                    if pilot.is_none() {
+                        let was = r.paused;
+                        r.pause();
+                        input.clear();
+                        log::info!("focus lost, paused {} (was {was})", r.paused);
+                    }
                 }
                 Event::FocusGained => log::info!("focus gained"),
                 _ => {}
@@ -201,6 +235,20 @@ fn run(terminal: &mut ratatui::DefaultTerminal, r: &mut Runner, renderer: &mut R
                     log::info!("muted {}", audio.muted);
                 }
                 Cmd::Restart => r.restart_key(),
+                Cmd::Auto => {
+                    if pilot.take().is_some() {
+                        audio.volume = 1.0;
+                        log::info!("auto off");
+                    } else {
+                        pilot = Some(new_pilot());
+                        audio.volume = AUTO_VOLUME;
+                        if r.paused {
+                            r.toggle_pause();
+                        }
+                        input.clear();
+                        log::info!("auto on");
+                    }
+                }
                 Cmd::Look => {
                     renderer.look = renderer.look.next();
                     settings::save_look(renderer.look.name());
@@ -218,22 +266,36 @@ fn run(terminal: &mut ratatui::DefaultTerminal, r: &mut Runner, renderer: &mut R
         last = now;
         while acc >= FRAME {
             acc -= FRAME;
+            if let Some(p) = pilot.as_mut() {
+                p.step(r);
+                if r.crashed && r.crash_ms() >= AUTO_RESPAWN_MS {
+                    r.restart_key();
+                    log::info!("auto respawn");
+                }
+            }
             r.tick();
         }
         for e in r.take_events() {
             match e {
                 sim::Event::Sound(s) => audio.play(s),
                 sim::Event::Crashed { score, high } => {
-                    log::info!("crash score {score} high {high} speed {:.3}", r.speed);
-                    if score == high && score > 0 {
-                        highscore::save(high);
+                    log::info!("crash score {score} high {high} speed {:.3} auto {}", r.speed, pilot.is_some());
+                    if pilot.is_some() {
+                        r.high = player_high;
+                    } else {
+                        player_high = high;
+                        if score == high && score > 0 {
+                            highscore::save(high);
+                        }
                     }
                 }
                 other => log::info!("{other:?}"),
             }
         }
 
-        let help: &[&str] = if r.crashed {
+        let help: &[&str] = if pilot.is_some() {
+            &["AUTO  ·  A or SPACE to take over  ·  V look  ·  M mute  ·  Q quit", "AUTO · A take over · Q quit", "AUTO"]
+        } else if r.crashed {
             &["ENTER or SPACE to restart  ·  Q quit", "ENTER restart · Q quit", "ENTER restart"]
         } else if r.paused {
             &["SPACE or P to resume  ·  Q quit", "SPACE resume · Q quit", "SPACE resume"]
@@ -242,7 +304,10 @@ fn run(terminal: &mut ratatui::DefaultTerminal, r: &mut Runner, renderer: &mut R
         } else {
             &["SPACE/↑ jump  ·  ↓ duck  ·  P pause  ·  V look  ·  M mute  ·  Q quit", "↑ jump · ↓ duck · P pause · V look", "↑ jump · ↓ duck"]
         };
-        let note = look_shown.filter(|t| t.elapsed() < LOOK_NOTE).map(|_| format!("look: {}", renderer.look.name()));
+        let note = look_shown
+            .filter(|t| t.elapsed() < LOOK_NOTE)
+            .map(|_| format!("look: {}", renderer.look.name()))
+            .or_else(|| pilot.is_some().then(|| "AUTO".to_string()));
         terminal.draw(|f| renderer.draw(r, f.area(), f.buffer_mut(), help, note.as_deref()))?;
 
         if snapshot.elapsed() >= SNAPSHOT_EVERY {

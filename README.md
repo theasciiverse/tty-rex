@@ -30,11 +30,21 @@ skips the check).
 | Enter | restart after a crash (Space works too, after a moment) |
 | P | pause (Space resumes too) |
 | V | next look |
+| A | auto mode: he runs on his own (any jump or duck key takes over) |
 | M | mute |
 | Q, Esc | quit |
 
 A gamepad works as in Chrome: A jumps, B ducks, Start restarts after a crash (and
-pauses otherwise); the D-pad's up and down jump and duck too.
+pauses otherwise); the D-pad's up and down jump and duck too, and Select toggles auto mode.
+
+## Auto mode
+
+`A` in game, or `tty-rex --auto`, lets him run on his own: a strip of ambient
+entertainment for, say, the bottom pane of a tmux layout. He plays well but not
+perfectly (now and then he's a moment late, more often at speed), so runs last a few
+minutes; after a crash he gets back up within 3 seconds. The sound drops to 40%, he
+doesn't pause when you switch panes or resize, and his scores don't touch your high
+score. For a strip: `tty-rex --auto --wide` in a short pane.
 
 Variable jump height needs key release events, which terminals speaking the kitty
 keyboard protocol send (kitty itself, for one). Elsewhere a release can only be guessed

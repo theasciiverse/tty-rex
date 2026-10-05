@@ -3,7 +3,8 @@
 //! - Jump: Space, Up, W, K. Hold for a higher jump; held through a landing
 //!   it jumps again (the browser's key repeat does the same).
 //! - Duck: Down, S, J. Mid-air it drops fast.
-//! - Enter restarts after a crash, P pauses, V changes the look, M mutes,
+//! - Enter restarts after a crash, P pauses, V changes the look, A toggles
+//!   auto mode (any jump or duck key takes over again), M mutes,
 //!   Q / Esc / Ctrl-C quit.
 //! - Gamepad, as in Chrome: A (bottom face button) jumps, B (right) ducks,
 //!   Start restarts after a crash (and pauses otherwise); the D-pad's up and
@@ -31,6 +32,7 @@ pub enum Cmd {
     Mute,
     Restart,
     Look,
+    Auto,
 }
 
 #[derive(Default)]
@@ -117,6 +119,7 @@ impl Input {
             KeyCode::Char('p' | 'P') => Some(Cmd::Pause),
             KeyCode::Char('m' | 'M') => Some(Cmd::Mute),
             KeyCode::Char('v' | 'V') => Some(Cmd::Look),
+            KeyCode::Char('a' | 'A') => Some(Cmd::Auto),
             KeyCode::Enter => Some(Cmd::Restart),
             _ => None,
         }
@@ -140,6 +143,12 @@ impl Input {
             released.push("duck");
         }
         released
+    }
+
+    /// Whether a key event is the player jumping or ducking (in auto mode,
+    /// that takes back control).
+    pub fn is_play_key(k: &KeyEvent) -> bool {
+        k.kind != KeyEventKind::Release && matches!(k.code, KeyCode::Char(' ') | KeyCode::Up | KeyCode::Down | KeyCode::Char('w' | 'W' | 'k' | 'K' | 's' | 'S' | 'j' | 'J'))
     }
 
     pub fn open_pad(&mut self) {
@@ -177,6 +186,7 @@ impl Input {
                             Button::South | Button::DPadUp => r.jump_down(),
                             Button::East | Button::DPadDown => r.duck_down(),
                             Button::Start => cmds.push(if r.crashed { Cmd::Restart } else { Cmd::Pause }),
+                            Button::Select => cmds.push(Cmd::Auto),
                             _ => {}
                         }
                     }

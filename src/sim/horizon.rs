@@ -101,6 +101,7 @@ pub const TYPES: [ObstacleType; 3] = [
     },
 ];
 
+#[derive(Clone)]
 pub struct Obstacle {
     pub kind: Kind,
     pub ty: &'static ObstacleType,
@@ -184,12 +185,14 @@ impl Obstacle {
     }
 }
 
+#[derive(Clone)]
 pub struct Cloud {
     pub x: i32,
     pub y: i32,
     gap: i32,
 }
 
+#[derive(Clone)]
 pub struct Star {
     pub x: f64,
     pub y: i32,
@@ -197,6 +200,7 @@ pub struct Star {
     pub variant: usize,
 }
 
+#[derive(Clone)]
 pub struct NightSky {
     pub moon_x: f64,
     pub phase: usize,
@@ -254,6 +258,7 @@ impl NightSky {
     }
 }
 
+#[derive(Clone)]
 pub struct Horizon {
     pub width: i32,
     pub obstacles: Vec<Obstacle>,

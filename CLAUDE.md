@@ -287,12 +287,20 @@ ANSI-to-image tool.
 
 ## Ideas for later (David, 2026-10-04: "later, not now")
 
-- **Attract / ambient mode:** a self-playing strip for the bottom of a larger tmux
-  layout, "almost like a little active entertainment". Groundwork already exists:
-  the sim is input-agnostic (an autopilot just calls `jump_down`/`duck_down`),
-  `render.rs` tests already contain a simple autopilot (needs to get smarter about
-  high pterodactyls to run for long), `--wide` and the scale-6 layout already fit
-  a 20x7 strip, and focus auto-pause would need to be off in this mode.
+- [x] **Auto mode** (built 2026-10-05; David: "he continues running on his own
+  when you press A ... stays alive, reduce the volume a bit ... if he dies ...
+  respawns after a few seconds ... as entertainment in a split tmux window").
+  `src/auto.rs`: the sim is cloned each frame and options (carry on, duck,
+  jump with a 3, 8 or 20 frame hold) are played ahead 50 frames; the first
+  that gets 18+ frames past the crash carrying-on would cause wins. Holds are
+  released on exactly the simulated frame (a release before the 30 px min
+  height is ignored, so one frame off turned planned full jumps into hops
+  onto cacti). Randomness: per new obstacle, 1% + 3% x speed chance of
+  reacting 16 to 45 frames late; tuned headless to ~3 min mean survival from
+  a cold start (`plays_well_but_not_forever`). In auto: volume 40%, respawn
+  3 s after a crash, no pause on focus loss or resize, robot scores never
+  touch the player's high score, any jump/duck key takes over, `A`/Select
+  toggles, `--auto` starts in it.
 - **Show the running system in it, ncmatrix-style:** something of the live
   machine woven into the scene (e.g. load or network activity driving the clouds,
   stars or obstacle rhythm, or text/data rain in the sky). Per David, ncmatrix

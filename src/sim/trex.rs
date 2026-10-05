@@ -63,6 +63,7 @@ fn anim(status: Status) -> (&'static [Frame], f64) {
     }
 }
 
+#[derive(Clone)]
 pub struct Trex {
     pub x: i32,
     pub y: i32,

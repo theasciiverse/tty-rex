@@ -1,6 +1,7 @@
 //! Small seedable PRNG (SplitMix64), so the sim needs no dependencies and a
 //! run can be replayed from its seed.
 
+#[derive(Clone)]
 pub struct Rng(u64);
 
 impl Rng {

@@ -17,6 +17,8 @@ pub struct Audio {
     sink: Option<MixerDeviceSink>,
     bank: Vec<SamplesBuffer>,
     pub muted: bool,
+    /// 1.0 normally; auto mode turns it down
+    pub volume: f32,
 }
 
 fn decode(bytes: &'static [u8]) -> Option<SamplesBuffer> {
@@ -45,7 +47,7 @@ impl Audio {
             }
         };
         let bank = if sink.is_some() { [PRESS, HIT, SCORE].into_iter().filter_map(decode).collect() } else { Vec::new() };
-        Audio { sink, bank, muted }
+        Audio { sink, bank, muted, volume: 1.0 }
     }
 
     pub fn available(&self) -> bool {
@@ -62,6 +64,6 @@ impl Audio {
             Sound::Hit => 1,
             Sound::Score => 2,
         };
-        sink.mixer().add(self.bank[i].clone());
+        sink.mixer().add(self.bank[i].clone().amplify(self.volume));
     }
 }
