@@ -3,7 +3,8 @@
 Asciiverse total conversion of Chrome's offline dinosaur game
 ("No Internet" / the T-Rex runner). Rust + Ratatui + Drawille.
 
-**Status:** Playable (2026-10-04). Faithful single-mode recreation: rules,
+**Status:** Playable (2026-10-04). Own git repo, private at
+github.com/theasciiverse/tty-rex (branch `main`). Faithful single-mode recreation: rules,
 timings, sprites and sounds from Chromium's own source. See "Built" below for
 what exists and the decisions behind it.
 
@@ -260,7 +261,10 @@ ANSI-to-image tool.
 - [ ] Colour palettes have only been judged in rendered captures, not yet on a
       range of real terminal themes
 - [ ] Gamepad (the original supports one; gilrs as in Panzer would do it)
-- [ ] Mid-game resize keeps the current speed; Chrome re-runs `setSpeed`
+- [x] Resize mid-run: checked in offline.ts `adjustDimensions`: Chrome doesn't
+      recompute the speed on resize (only at start and restart), it stops the
+      game. tty-rex now pauses on resize too (an earlier note here claimed
+      Chrome re-ran `setSpeed`; it doesn't).
 
 ## Ideas for later (David, 2026-10-04: "later, not now")
 

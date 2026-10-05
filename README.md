@@ -39,7 +39,8 @@ from the key repeats stopping, so every jump is a full one.
 
 ## Looks
 
-`V` cycles through them in game; `--look NAME` picks one at launch.
+`V` cycles through them in game and remembers the choice for next time (in
+`~/.config/tty-rex/look`); `--look NAME` picks one for a single run.
 
 | Look | |
 |---|---|

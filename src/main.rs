@@ -5,6 +5,7 @@ mod input;
 mod octants;
 mod palette;
 mod render;
+mod settings;
 mod sim;
 mod sprites;
 
@@ -35,7 +36,7 @@ fn main() -> io::Result<()> {
              P pauses (so does switching away from the terminal), V changes the look,\n\
              M mutes, Q quits.\n\
              Fits anything from a 20x7 split pane up to Chrome's own pixels (38 rows).\n\n\
-             --look NAME how it's drawn (V cycles them in game):\n\
+             --look NAME how it's drawn (V cycles them in game and remembers the choice):\n\
                            mixed    colour half-block scenery, colour Braille sprites (default)\n\
                            blocks   everything in colour half-blocks\n\
                            color    colour Braille sprites on a plain page\n\
@@ -82,7 +83,12 @@ fn main() -> io::Result<()> {
         })
     } else if has("--classic") {
         Look::Classic
-    } else if has("--mono") || no_color {
+    } else if has("--mono") {
+        Look::Braille
+    } else if let Some(saved) = settings::load_look().and_then(|n| Look::parse(&n)) {
+        // the look V last picked
+        saved
+    } else if no_color {
         Look::Braille
     } else {
         Look::Mixed
@@ -148,6 +154,7 @@ fn run(terminal: &mut ratatui::DefaultTerminal, r: &mut Runner, renderer: &mut R
                         Some(Cmd::Restart) => r.restart_key(),
                         Some(Cmd::Look) => {
                             renderer.look = renderer.look.next();
+                            settings::save_look(renderer.look.name());
                             look_shown = Some(Instant::now());
                             log::info!("look {:?}", renderer.look);
                         }
@@ -160,6 +167,10 @@ fn run(terminal: &mut ratatui::DefaultTerminal, r: &mut Runner, renderer: &mut R
                     if let Some(l) = layout {
                         r.resize(l.width);
                     }
+                    // offline.ts adjustDimensions: a resize mid-run stops
+                    // the game (Space resumes); the speed stays as it was
+                    r.pause();
+                    input.clear();
                 }
                 Event::FocusLost => {
                     let was = r.paused;
