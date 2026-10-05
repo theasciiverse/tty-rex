@@ -47,7 +47,12 @@ from the key repeats stopping, so every jump is a full one.
 | `braille` | black and white Braille in the terminal's own colours; night inverts them, like Chrome |
 | `classic` | Braille in Chrome's grey on white (needs true colour) |
 | `color` | coloured Braille sprites on a plain page |
-| `blocks` | everything in colour block glyphs, each cell fitted to the original pixels; solid pixel-art clouds; the T-Rex in block octants, as sharp as Braille (in VTE terminals such as GNOME Terminal and Ptyxis, or with `--octants`), else quadrants |
+| `blocks` | everything in colour block glyphs, each cell fitted to the original pixels; solid pixel-art clouds; the T-Rex in block octants, as sharp as Braille, else quadrants |
+
+Block octants are new (Unicode 16) and only some terminals draw them. They're used
+automatically in VTE 0.78+ (GNOME Terminal, Ptyxis and others) and Ghostty 1.1.1+.
+kitty 0.40+ and foot 1.20+ draw them too but don't announce their version, so pass
+`--octants` there. WezTerm has them only in nightly builds; Alacritty doesn't.
 | `mixed` | the default: half-block scenery (sky, parallax dunes, pebbled sand) behind coloured Braille sprites |
 
 In colour: Chrome's grey dino (red when it crashes), green cacti, violet pterodactyls, an

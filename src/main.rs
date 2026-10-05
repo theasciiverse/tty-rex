@@ -45,8 +45,9 @@ fn main() -> io::Result<()> {
              --mono, --classic   same as --look braille, --look classic\n\
              --wide      the road runs the full terminal width, past Chrome's 600 px\n\
                          (you see further ahead, so it's a little easier)\n\
-             --octants   draw the blocks look's T-Rex in block octants, as sharp as Braille\n\
-                         (on by default in VTE terminals, which draw them: GNOME Terminal, Ptyxis)\n\
+             --octants   draw the blocks look's T-Rex in block octants, as sharp as Braille.\n\
+                         On by default in VTE 0.78+ (GNOME Terminal, Ptyxis, ...) and Ghostty 1.1.1+;\n\
+                         kitty 0.40+ and foot 1.20+ draw them too but can't be detected\n\
              --no-octants  quadrants instead\n\
              --mute      no sound\n\
              --force     start even if Braille looks unusable here\n\
@@ -109,12 +110,10 @@ fn main() -> io::Result<()> {
     execute!(io::stdout(), EnableFocusChange)?;
     let size = terminal.size()?;
     log::info!("start kitty_keyboard={kitty} terminal {}x{}", size.width, size.height);
-    // block octants (the blocks look's T-Rex at Braille resolution): VTE
-    // draws them itself since 0.78; elsewhere only on request
-    let vte = std::env::var("VTE_VERSION").ok().and_then(|v| v.parse::<u32>().ok()).unwrap_or(0);
-    let octants = if has("--no-octants") { false } else { has("--octants") || vte >= 7800 };
+    let detected = octants_detected();
+    let octants = if has("--no-octants") { false } else { has("--octants") || detected.is_some() };
     let mut renderer = Renderer::new(look, depth, forced_scale, has("--wide"), octants);
-    log::info!("octants {octants} (VTE_VERSION {vte})");
+    log::info!("octants {octants} (detected: {})", detected.unwrap_or("no"));
     let layout = renderer.layout(Rect::new(0, 0, size.width, size.height));
     log::info!("layout {layout:?}");
     let mut runner = Runner::new(layout.map_or(sim::MAX_WIDTH, |l| l.width), highscore::load(), seed);
@@ -126,6 +125,29 @@ fn main() -> io::Result<()> {
     }
     ratatui::restore();
     result
+}
+
+/// Whether the terminal is known to draw block octants (U+1CD00..1CDE5)
+/// itself, so the blocks look's T-Rex can be drawn at Braille resolution.
+/// Only terminals that say which version they are can be detected; checked
+/// in each one's source (2026-10-05): VTE since 0.78, Ghostty since 1.1.1.
+/// kitty (0.40.0+) and foot (1.20.0+) draw them too but don't put their
+/// version in the environment, so they need --octants; WezTerm has them only
+/// in nightlies, Alacritty not at all.
+fn octants_detected() -> Option<&'static str> {
+    let env = |k: &str| std::env::var(k).ok();
+    if env("VTE_VERSION").and_then(|v| v.parse::<u32>().ok()).is_some_and(|v| v >= 7800) {
+        return Some("VTE 0.78+");
+    }
+    if env("TERM_PROGRAM").is_some_and(|p| p == "ghostty") {
+        let version = env("TERM_PROGRAM_VERSION").unwrap_or_default();
+        let mut parts = version.split(|c: char| !c.is_ascii_digit()).filter(|p| !p.is_empty()).map(|p| p.parse::<u32>().unwrap_or(0));
+        let v = (parts.next().unwrap_or(0), parts.next().unwrap_or(0), parts.next().unwrap_or(0));
+        if v >= (1, 1, 1) {
+            return Some("Ghostty 1.1.1+");
+        }
+    }
+    None
 }
 
 fn run(terminal: &mut ratatui::DefaultTerminal, r: &mut Runner, renderer: &mut Renderer, input: &mut Input, audio: &mut audio::Audio) -> io::Result<()> {

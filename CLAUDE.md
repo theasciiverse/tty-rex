@@ -215,8 +215,13 @@ day/night instead of blending.
   octants): a 9 px sparkle came out of the fit as a block and two stray lines,
   which David asked about ("distant birds?"). VTE draws octants itself since 0.78 (no
   font needed; checked in VTE's source), so they're on by default when
-  `VTE_VERSION >= 7800` (GNOME Terminal, Ptyxis); `--octants` / `--no-octants`
-  override. Without octants: quadrants sampled from Chrome's 1x pixels, lit if
+  `VTE_VERSION >= 7800` (GNOME Terminal, Ptyxis) or in Ghostty 1.1.1+
+  (`TERM_PROGRAM`/`TERM_PROGRAM_VERSION`; its octant table first shipped in
+  v1.1.1). kitty (0.40.0, changelog) and foot (1.20.0, changelog) draw them too
+  but don't expose their version in the environment, so they need `--octants`;
+  WezTerm has them only in nightlies (changelog), Alacritty's builtin font has
+  none. All checked in each project's source on 2026-10-05. `--octants` /
+  `--no-octants` override. Without octants: quadrants sampled from Chrome's 1x pixels, lit if
   over half dino, with the dino snapped to the alignment that fits his pixel
   grid best; it keeps eye and arm at full size, the silhouette only at 13 rows.
   Quadrants from the Braille dots don't work (two dots per quadrant: "either"
@@ -261,6 +266,8 @@ ANSI-to-image tool.
 - [ ] Colour palettes have only been judged in rendered captures, not yet on a
       range of real terminal themes
 - [ ] Gamepad (the original supports one; gilrs as in Panzer would do it)
+- [x] Octants beyond VTE: researched per terminal (see the blocks look notes);
+      Ghostty auto-detected, kitty and foot documented for `--octants`.
 - [x] Resize mid-run: checked in offline.ts `adjustDimensions`: Chrome doesn't
       recompute the speed on resize (only at start and restart), it stops the
       game. tty-rex now pauses on resize too (an earlier note here claimed
