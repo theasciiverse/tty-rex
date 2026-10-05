@@ -231,6 +231,61 @@ fn glyph_masks() -> &'static [(char, u64)] {
     })
 }
 
+/// Thin line and hook characters for the quadrant fallback's lost thin
+/// parts, as 8x8 masks: strokes through the middle (rows or columns 3 and
+/// 4) or along an edge.
+fn line_masks() -> &'static [(char, u64)] {
+    use std::sync::OnceLock;
+    static MASKS: OnceLock<Vec<(char, u64)>> = OnceLock::new();
+    MASKS.get_or_init(|| {
+        let at = |f: &dyn Fn(u64, u64) -> bool| (0..64u64).fold(0u64, |m, i| if f(i % 8, i / 8) { m | 1 << i } else { m });
+        let h = |x0: u64, x1: u64| at(&move |x, y| (3..=4).contains(&y) && (x0..=x1).contains(&x));
+        let v = |y0: u64, y1: u64| at(&move |x, y| (3..=4).contains(&x) && (y0..=y1).contains(&y));
+        vec![
+            ('▔', at(&|_, y| y == 0)),
+            ('▁', at(&|_, y| y == 7)),
+            ('▏', at(&|x, _| x == 0)),
+            ('▕', at(&|x, _| x == 7)),
+            ('─', h(0, 7)),
+            ('│', v(0, 7)),
+            ('╴', h(0, 4)),
+            ('╶', h(3, 7)),
+            ('╵', v(0, 4)),
+            ('╷', v(3, 7)),
+            ('┌', h(3, 7) | v(3, 7)),
+            ('┐', h(0, 4) | v(3, 7)),
+            ('└', h(3, 7) | v(0, 4)),
+            ('┘', h(0, 4) | v(0, 4)),
+        ]
+    })
+}
+
+/// Per sample, the distance to the nearest set bit of `mask` (8 if none).
+fn distances(mask: u64) -> [u32; 64] {
+    let mut d = [8u32; 64];
+    for (i, di) in d.iter_mut().enumerate() {
+        let (x, y) = ((i % 8) as i32, (i / 8) as i32);
+        for j in (0..64).filter(|&j| mask >> j & 1 == 1) {
+            let dd = (x - (j % 8) as i32).abs().max((y - (j / 8) as i32).abs()) as u32;
+            *di = (*di).min(dd);
+        }
+    }
+    d
+}
+
+/// The line character whose strokes lie closest to the mask's, both ways
+/// round (each lit sample near a stroke, each stroke near a lit sample).
+fn fit_lines(mask: u64) -> char {
+    let ds = distances(mask);
+    let cost = |gm: u64| -> u32 {
+        let dg = distances(gm);
+        let near: u32 = (0..64).filter(|&i| mask >> i & 1 == 1).map(|i| dg[i]).sum();
+        let back: u32 = (0..64).filter(|&i| gm >> i & 1 == 1).map(|i| ds[i]).sum();
+        near + back
+    };
+    line_masks().iter().min_by_key(|&&(_, gm)| cost(gm)).map_or(' ', |&(g, _)| g)
+}
+
 /// Fit one cell: reduce its samples to two colours, then pick the glyph
 /// (either way round) whose mask disagrees with the fewest samples. A
 /// sprite's colour is always one of the two, even when it covers less than
@@ -653,12 +708,17 @@ impl Renderer {
                 // the night stars too: a 9 px sparkle chopped into fragments
                 // by the fit, exact as octants
                 let star = self.octants && top == STAR;
+                let i = (cy * l.cols as i32 + cx) as usize;
                 let glyph = match &quads {
                     None if top == DINO => octants::OCTANT[bits as usize],
                     _ if star => octants::OCTANT[bits as usize],
-                    Some(q) if q[(cy * l.cols as i32 + cx) as usize] != 0 => {
-                        bits = q[(cy * l.cols as i32 + cx) as usize];
+                    Some((q, _)) if q[i] != 0 => {
+                        bits = q[i];
                         octants::OCTANT[bits as usize]
+                    }
+                    Some((_, thin)) if thin[i].is_some() => {
+                        bits = 0;
+                        thin[i].unwrap_or(' ')
                     }
                     _ => continue,
                 };
@@ -676,7 +736,7 @@ impl Renderer {
 
     /// The quadrant T-Rex, as an octant-style pattern per cell (each
     /// quadrant setting its two octant bits), row-major over the field.
-    fn dino_quadrants(&self, r: &Runner, l: &Layout) -> Vec<u8> {
+    fn dino_quadrants(&self, r: &Runner, l: &Layout) -> (Vec<u8>, Vec<Option<char>>) {
         let t = &r.trex;
         let s = self.sprites_at(1).get(trex_sprite(t.frame()));
         let (qw, qh) = (l.scale, 2 * l.scale);
@@ -713,7 +773,32 @@ impl Renderer {
                 out[(cy * l.cols as i32 + cx) as usize] |= bits;
             }
         }
-        out
+        // thin parts the quadrants lose (the arm, a leg's tip): a cell with
+        // real dino in Chrome's pixels but no quadrant lit gets the line or
+        // hook character whose strokes lie closest to them
+        let (cw, ch) = (2 * qw, 2 * qh);
+        let mut thin = vec![None; out.len()];
+        for cy in 0..l.rows as i32 {
+            for cx in 0..l.cols as i32 {
+                if out[(cy * l.cols as i32 + cx) as usize] != 0 {
+                    continue;
+                }
+                let mut mask = 0u64;
+                for sr in 0..8 {
+                    for sc in 0..8 {
+                        let x = cx * cw + sc * cw / 8 - q0x * qw - ox;
+                        let y = cy * ch + sr * ch / 8 - q0y * qh - oy;
+                        if x >= 0 && y >= 0 && x < s.w && y < s.h && s.dot(x, y) {
+                            mask |= 1 << (sr * 8 + sc);
+                        }
+                    }
+                }
+                if mask.count_ones() >= 6 {
+                    thin[(cy * l.cols as i32 + cx) as usize] = Some(fit_lines(mask));
+                }
+            }
+        }
+        (out, thin)
     }
 
     /// Style of an empty cell in the Braille and classic looks.
@@ -1163,7 +1248,9 @@ mod contact {
     #[ignore]
     fn dino_gallery() {
         let Ok(dir) = std::env::var("TTY_REX_SNAP") else { return };
-        let renderer = Renderer::new(Look::Blocks, Depth::True, None, false, true);
+        // TTY_REX_QUADS=1: the quadrant fallback instead of octants
+        let octants = std::env::var("TTY_REX_QUADS").is_err();
+        let renderer = Renderer::new(Look::Blocks, Depth::True, None, false, octants);
         let rgb = |c: Color| match c {
             Color::Rgb(r, g, b) => format!("{r};{g};{b}"),
             _ => "0;0;0".into(),

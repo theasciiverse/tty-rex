@@ -225,9 +225,13 @@ day/night instead of blending.
   over half dino, with the dino snapped to the alignment that fits his pixel
   grid best; it keeps eye and arm at full size, the silhouette only at 13 rows.
   Quadrants from the Braille dots don't work (two dots per quadrant: "either"
-  fills the eye and mouth, "both" drops the thin parts). For that fallback,
-  David's idea of cheating thin parts (mouth, arms) with line characters is
-  still open. `blocks_dino_is_the_braille_dino_in_octants` checks every dino
+  fills the eye and mouth, "both" drops the thin parts). David's cheat is in
+  for the fallback: a cell with real dino in Chrome's pixels but no quadrant
+  lit (the arm, the lower jaw, a leg's tip) gets the line or hook character
+  (`│ ▏ ▕ ─ ▔ ▁ ╷ ╵ ╴ ╶ ┐ ┘ └ ┌`) whose strokes lie closest to his pixels
+  (`fit_lines`, a two-way stroke distance). Kept after a with/without gallery
+  comparison: it brings back the jaw line and the arm without clutter.
+  `TTY_REX_QUADS=1` makes `dino_gallery` show the fallback. `blocks_dino_is_the_braille_dino_in_octants` checks every dino
   cell against the Braille look's dots, all frames, every x offset, four sizes.
   History, so it isn't repeated: fitting him per frame gave a different face at
   every cell alignment, and patches for eye, mouth and jaw each passed their
