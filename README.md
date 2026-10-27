@@ -1,3 +1,16 @@
+> **Play it with Asciiverse.** With [av](https://asciiverse.sh), the Asciiverse
+> client:
+>
+> ```
+> av install tty-rex
+> av play tty-rex
+> ```
+>
+> Or download the archive for your system from this repository's Releases,
+> unpack it and run `./tty-rex` (`tty-rex.exe` on Windows).
+>
+> The original README follows.
+
 # tty-rex
 
 Chrome's offline "No Internet" T-Rex runner, in the terminal, drawn in Braille dots.
