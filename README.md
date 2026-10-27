@@ -7,7 +7,7 @@
 > ```
 >
 > Or download the archive for your system from this repository's Releases,
-> unpack it and run `./tty-rex` (`tty-rex.exe` on Windows).
+> unpack it and run `./tty-rex`.
 >
 > The original README follows.
 
