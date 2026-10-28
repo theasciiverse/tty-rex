@@ -513,13 +513,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "drawprobe"
-version = "0.1.0"
-dependencies = [
- "supports-unicode",
-]
-
-[[package]]
 name = "either"
 version = "1.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1940,12 +1933,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "supports-unicode"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b7401a30af6cb5818bb64852270bb722533397edcfc7344954a38f420819ece2"
-
-[[package]]
 name = "symphonia"
 version = "0.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2229,7 +2216,6 @@ dependencies = [
 name = "tty-rex"
 version = "0.1.0"
 dependencies = [
- "drawprobe",
  "env_logger",
  "gilrs",
  "log",

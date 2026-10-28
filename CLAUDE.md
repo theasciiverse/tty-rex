@@ -264,8 +264,6 @@ ANSI-to-image tool.
 - [x] Scope: strictly faithful single mode, with day/night, moon phases and stars.
       Not ported: the alt game modes, the slow/a11y audio-cue mode, the restart
       button's newer 8-frame animation (frame 0 only).
-- [x] `drawprobe`: refuses to start on Braille rated Unusable/Degraded (or no
-      codepoint support), `--force` overrides; no true-colour requirement.
 - [x] Sound: the original three clips, played via rodio; `M` mutes.
 - [x] Colour palettes: true colour judged in David's own GNOME Terminal
       screenshots. 256-colour mode uses only entries 16-255, which VTE builds as

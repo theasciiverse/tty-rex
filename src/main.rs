@@ -1,6 +1,5 @@
 mod audio;
 mod auto;
-mod capability;
 mod highscore;
 mod input;
 mod octants;
@@ -36,7 +35,7 @@ fn main() -> io::Result<()> {
     if has("--help") || has("-h") {
         print!(
             "{}",
-            r#"tty-rex [--auto] [--look NAME] [--wide] [--octants | --no-octants] [--mute] [--force] [--scale N] [--seed N]
+            r#"tty-rex [--auto] [--look NAME] [--wide] [--octants | --no-octants] [--mute] [--scale N] [--seed N]
 
 Chrome's offline T-Rex runner, in the terminal.
 Space / Up jump (hold for higher), Down ducks, Enter restarts,
@@ -63,18 +62,11 @@ Fits anything from a 20x7 split pane up to Chrome's own pixels (38 rows).
                  can't be detected
   --no-octants   quadrants instead
   --mute         no sound
-  --force        start even if Braille looks unusable here
   --scale N      canvas pixels per Braille dot, 1 (finest) to 6; default fits
   --seed N       fixed random seed, for replaying a run
 "#
         );
         return Ok(());
-    }
-    if !has("--force") {
-        if let Err(e) = capability::check() {
-            eprintln!("{e}");
-            std::process::exit(1);
-        }
     }
     let arg_after = |flag: &str| args.iter().position(|a| a == flag).and_then(|i| args.get(i + 1)).cloned();
     let forced_scale = match arg_after("--scale").map(|v| v.parse::<i32>()) {

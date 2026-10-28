@@ -31,9 +31,6 @@ For ultra-wide play, `--wide` runs the road the full terminal width instead of s
 at Chrome's 600 px (you see further ahead, so it's a little easier).
 Switching away from the terminal pauses the game (where the terminal reports focus).
 
-Braille has to render well; that's checked at launch with `drawprobe` (`--force`
-skips the check).
-
 ## Keys
 
 | Key | |
@@ -88,7 +85,7 @@ makes `braille` the default.
 
 ## Options
 
-`tty-rex --help`: `--look NAME`, `--wide`, `--octants`/`--no-octants`, `--mute`, `--force`, `--scale N`, `--seed N`
+`tty-rex --help`: `--look NAME`, `--wide`, `--octants`/`--no-octants`, `--mute`, `--scale N`, `--seed N`
 (`--mono` and `--classic` are short for `--look braille` and `--look classic`).
 
 The high score is kept in `$XDG_DATA_HOME/tty-rex/highscore` (`~/.local/share/...`).
