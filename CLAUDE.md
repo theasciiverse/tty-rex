@@ -7,6 +7,7 @@ Asciiverse total conversion of Chrome's offline dinosaur game
 github.com/theasciiverse/tty-rex (branch `main`). Faithful single-mode recreation: rules,
 timings, sprites and sounds from Chromium's own source. See "Built" below for
 what exists and the decisions behind it.
+Version 1.0.0 (2026-10-28). What comes next is in `ROADMAP.md`.
 
 ## Name
 
