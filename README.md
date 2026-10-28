@@ -101,3 +101,8 @@ Rules, timings, sprites and sounds come from Chromium's dino game
 (`components/neterror/resources/dino_game`, sprite sheet and sounds alongside it),
 BSD-3-Clause, copyright The Chromium Authors; see `assets/chromium/LICENSE`.
 `tools/extract_sprites.py` rebuilds `assets/sprites.txt` from the sprite sheet.
+
+## Licence
+
+BSD 3-Clause; see [LICENSE](LICENSE). Chromium's sprites and sounds keep
+their own licence, in `assets/chromium/LICENSE`.

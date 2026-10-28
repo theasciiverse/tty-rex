@@ -2,6 +2,7 @@
 name = "tty-rex"
 version = "0.1.0"
 edition = "2021"
+license = "BSD-3-Clause"
 description = "Asciiverse total conversion of Chrome's offline T-Rex runner, Rust + Ratatui + Braille"
 
 [[bin]]
