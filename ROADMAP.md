@@ -11,6 +11,12 @@ Chrome's offline T-Rex game is complete.
 - [x] Keyboard and gamepad (Chrome's mapping)
 - [x] Auto mode: he runs on his own, for a strip in a tmux split
 
+## 1.0.1: built
+
+- [x] Gamepads work on Windows: gilrs reads them through XInput, since its
+  default (Windows Gaming Input) only reports to a program with a focused
+  window of its own, which a terminal game never has
+
 ## 1.0.x
 
 - [ ] Try the gamepad with a physical pad (built and wired, not yet tried)
